@@ -42,6 +42,7 @@ pseudobulk_de = function(input,
                          meta = NULL, 
                          replicate_col = 'replicate',
                          cell_type_col = 'cell_type',
+                         latent.vars = NULL,
                          label_col = 'label',
                          min_cells = 3,
                          min_reps = 2,
@@ -73,7 +74,8 @@ pseudobulk_de = function(input,
   results = map(pseudobulks, function(x) {
     # create targets matrix
     targets = data.frame(group_sample = colnames(x)) %>%
-      mutate(group = gsub(".*\\:", "", group_sample))
+      mutate(group = gsub(".*\\:", "", group_sample)) %>%
+    mutate(cov = gsub("\\:.*", "", group_sample))
     ## optionally, carry over factor levels from entire dataset
     if (is.factor(meta$label)) {
       targets$group %<>% factor(levels = levels(meta$label))
@@ -81,7 +83,7 @@ pseudobulk_de = function(input,
     if (n_distinct(targets$group) > 2)
       return(NULL)
     # create design
-    design = model.matrix(~ group, data = targets)
+    design = model.matrix(~ group + cov, data = targets)
     
     DE = switch(de_method,
                 edgeR = {
